@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: parcial-api
+    ports:
+      - "8000:8000"
+    environment:
+      - MONGO_URI=${MONGO_URI}
+      - DATABASE_NAME=${DATABASE_NAME}
+      - SERVICE_PORT=${SERVICE_PORT}
+      - SERVICE_NAME=${SERVICE_NAME}
+      - ENVIRONMENT=${ENVIRONMENT}
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    networks:
+      - parcial-network
+    restart: unless-stopped
+
+networks:
+  parcial-network:
+    driver: bridge
+
