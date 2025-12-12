@@ -23,6 +23,10 @@
 }
 
 /* Bajar z-index de controles de Leaflet para que no tapen el autocomplete */
-.leaflet-control-container {
-  z-index: 500 !important;
+.leaflet-control-container,
+.leaflet-top,
+.leaflet-bottom,
+.leaflet-control-zoom,
+.leaflet-control {
+  z-index: 400 !important;
 }
