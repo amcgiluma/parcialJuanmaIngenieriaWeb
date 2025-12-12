@@ -12,12 +12,17 @@
   .btn-neo {
     @apply font-bold border-2 border-neo-black px-6 py-2 shadow-hard transition-all active:translate-x-[2px] active:translate-y-[2px] active:shadow-none hover:-translate-y-1 hover:-translate-x-1 hover:shadow-hard-lg bg-neo-lime;
   }
-  
+
   .card-neo {
     @apply bg-white border-2 border-neo-black p-6 shadow-hard mb-6;
   }
-  
+
   .input-neo {
     @apply w-full bg-white border-2 border-neo-black p-3 focus:outline-none focus:shadow-hard transition-shadow placeholder:text-gray-500 font-mono;
   }
+}
+
+/* Bajar z-index de controles de Leaflet para que no tapen el autocomplete */
+.leaflet-control-container {
+  z-index: 500 !important;
 }

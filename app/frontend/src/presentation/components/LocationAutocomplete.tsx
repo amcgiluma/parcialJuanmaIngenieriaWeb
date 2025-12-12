@@ -71,7 +71,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
             />
 
             {showDropdown && suggestions.length > 0 && (
-                <div className="absolute z-50 w-full mt-1 bg-white border-2 border-neo-black shadow-hard max-h-60 overflow-y-auto">
+                <div className="absolute z-[1000] w-full mt-1 bg-white border-2 border-neo-black shadow-hard max-h-60 overflow-y-auto">
                     {suggestions.map((suggestion, idx) => (
                         <button
                             key={idx}
