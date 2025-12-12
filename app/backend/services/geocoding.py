@@ -1,11 +1,14 @@
 """
 Servicio de Geocodificación.
-Utiliza OpenStreetMap Nominatim API.
+Utiliza LocationIQ API (OpenStreetMap data, mejor para cloud hosting).
 """
 import httpx
 from fastapi import HTTPException
+import os
 
-NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
+# LocationIQ API (usa LOCATIONIQ_TOKEN si existe, sino falla en producción)
+LOCATIONIQ_TOKEN = os.getenv("LOCATIONIQ_TOKEN")
+BASE_URL = "https://us1.locationiq.com/v1/search.php"
 
 async def get_coordinates(query: str) -> tuple[float, float]:
     """
@@ -20,19 +23,22 @@ async def get_coordinates(query: str) -> tuple[float, float]:
     Raises:
         HTTPException: Si no se encuentra el lugar o falla la API
     """
+    if not LOCATIONIQ_TOKEN:
+        raise HTTPException(
+            status_code=500, 
+            detail="LOCATIONIQ_TOKEN no configurado en variables de entorno"
+        )
+    
     params = {
         "q": query,
         "format": "json",
-        "limit": 1
-    }
-    # Nominatim requiere un User-Agent válido
-    headers = {
-        "User-Agent": "MiMapaApp/1.0"
+        "limit": 1,
+        "key": LOCATIONIQ_TOKEN
     }
     
     async with httpx.AsyncClient() as client:
         try:
-            response = await client.get(NOMINATIM_URL, params=params, headers=headers)
+            response = await client.get(BASE_URL, params=params, timeout=10.0)
             response.raise_for_status()
             data = response.json()
             
@@ -42,7 +48,11 @@ async def get_coordinates(query: str) -> tuple[float, float]:
             location = data[0]
             return float(location["lat"]), float(location["lon"])
             
-        except httpx.HTTPError as e:
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 401:
+                raise HTTPException(status_code=500, detail="API Key de LocationIQ inválida")
+            raise HTTPException(status_code=503, detail="Error al conectar con servicio de geocoding")
+        except httpx.HTTPError:
             raise HTTPException(status_code=503, detail="Error al conectar con servicio de geocoding")
 
 async def search_locations(query: str, limit: int = 5) -> list[dict]:
@@ -58,20 +68,21 @@ async def search_locations(query: str, limit: int = 5) -> list[dict]:
     """
     if not query or len(query) < 2:
         return []
+    
+    if not LOCATIONIQ_TOKEN:
+        return []  # Fail silently for autocomplete
         
     params = {
         "q": query,
         "format": "json",
         "limit": limit,
-        "addressdetails": 1
-    }
-    headers = {
-        "User-Agent": "MiMapaApp/1.0"
+        "addressdetails": 1,
+        "key": LOCATIONIQ_TOKEN
     }
     
     async with httpx.AsyncClient() as client:
         try:
-            response = await client.get(NOMINATIM_URL, params=params, headers=headers)
+            response = await client.get(BASE_URL, params=params, timeout=10.0)
             response.raise_for_status()
             data = response.json()
             
