@@ -22,15 +22,18 @@ interface ReviewDetailProps {
  */
 const ReviewDetail: React.FC<ReviewDetailProps> = ({ review, onClose }) => {
     /**
-     * Formatea una fecha ISO a formato legible.
+     * Formatea una fecha ISO a formato legible en hora española.
      * 
-     * @param dateString - Fecha en formato ISO
-     * @returns Fecha formateada
+     * @param dateString - Fecha en formato ISO (UTC)
+     * @returns Fecha formateada en hora española
      */
     const formatDate = (dateString: string): string => {
-        return new Date(dateString).toLocaleString('es-ES', {
+        // Añadir 'Z' si no tiene timezone para indicar que es UTC
+        const utcDate = dateString.endsWith('Z') ? dateString : dateString + 'Z';
+        return new Date(utcDate).toLocaleString('es-ES', {
             dateStyle: 'medium',
-            timeStyle: 'short'
+            timeStyle: 'short',
+            timeZone: 'Europe/Madrid'
         });
     };
 
