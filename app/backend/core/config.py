@@ -21,6 +21,15 @@ class Settings(BaseSettings):
     service_port: int
     service_name: str
     environment: str
+
+    # Cloudinary
+    cloud_name: str
+    cloudinary_api: str
+    cloudinary_api_secret: str
+
+    # Google OAuth
+    google_client_id: str | None = None
+    google_client_secret: str | None = None
     
     model_config = SettingsConfigDict(
         env_file=".env",

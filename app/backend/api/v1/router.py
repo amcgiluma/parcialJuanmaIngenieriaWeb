@@ -1,25 +1,9 @@
-"""
-Router principal de la API v1.
-
-Agrega todos los routers de los diferentes endpoints.
-Plantilla genérica para adaptar según las entidades del examen.
-"""
 from fastapi import APIRouter
-from api.v1.endpoints import examples
+from api import auth, markers, visits, geocoding
 
 api_router = APIRouter()
 
-# Incluir routers de cada entidad
-api_router.include_router(
-    examples.router,
-    prefix="/examples",
-    tags=["examples"]
-)
-
-# Aquí puedes agregar más routers según necesites:
-# api_router.include_router(
-#     otros.router,
-#     prefix="/otros",
-#     tags=["otros"]
-# )
-
+api_router.include_router(auth.router, prefix="/auth", tags=["Authentication"])
+api_router.include_router(markers.router, prefix="/maps", tags=["Maps & Markers"])
+api_router.include_router(visits.router, prefix="/social", tags=["Social Visits"])
+api_router.include_router(geocoding.router, prefix="/geocoding", tags=["Geocoding"])

@@ -54,7 +54,7 @@ async def root():
         dict: Mensaje de bienvenida y links útiles
     """
     return {
-        "message": "API REST - Parcial 1",
+        "message": "MiMapa API",
         "version": "1.0.0",
         "docs": "/docs",
         "openapi": "/openapi.json"
