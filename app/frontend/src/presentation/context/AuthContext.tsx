@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { GoogleOAuthProvider, useGoogleLogin, googleLogout } from '@react-oauth/google';
+import { GoogleOAuthProvider, googleLogout } from '@react-oauth/google';
 import api from '../../infrastructure/api/axiosConfig';
 import { User } from '../../domain/types';
 
@@ -35,17 +35,6 @@ const AuthProviderInternal: React.FC<{ children: React.ReactNode }> = ({ childre
 
         initAuth();
     }, []);
-
-    // Login con Google
-    const login = useGoogleLogin({
-        onSuccess: async (tokenResponse) => {
-            try {
-                // Not used - we use GoogleLogin component in Login page instead
-            } catch (error) {
-                console.error('Login Failed', error);
-            }
-        },
-    });
 
     const logout = () => {
         googleLogout();

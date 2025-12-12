@@ -3,7 +3,6 @@ import { AuthProvider, useAuth } from './presentation/context/AuthContext';
 import Login from './presentation/pages/Login';
 import Dashboard from './presentation/pages/Dashboard';
 import { useEffect, useState } from 'react';
-import { User } from './domain/types';
 
 // Componente para proteger rutas
 const PrivateRoute = ({ children }: { children: JSX.Element }) => {
@@ -21,7 +20,6 @@ const PrivateRoute = ({ children }: { children: JSX.Element }) => {
 
 // Necesitamos un wrapper interno para acceder al contexto
 const AppRoutes = () => {
-    const { login } = useAuth(); // forzamos update
     const [isInit, setIsInit] = useState(false);
 
     useEffect(() => {

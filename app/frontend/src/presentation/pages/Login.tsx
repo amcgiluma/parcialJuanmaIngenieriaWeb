@@ -12,7 +12,7 @@ const Login: React.FC = () => {
         if (credentialResponse.credential) {
             try {
                 // Enviar el token al backend
-                const res = await api.post('/auth/login', { token: credentialResponse.credential });
+                await api.post('/auth/login', { token: credentialResponse.credential });
 
                 // Guardar token
                 localStorage.setItem('google_token', credentialResponse.credential);
