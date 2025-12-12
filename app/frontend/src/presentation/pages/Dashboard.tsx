@@ -1,176 +1,263 @@
+/**
+ * Dashboard principal de ReViews.
+ * Muestra lista de reseñas, mapa y formulario de creación.
+ */
 import React, { useEffect, useState } from 'react';
-import Map from '../components/Map';
-import LocationAutocomplete from '../components/LocationAutocomplete';
-import { useMarkers } from '../../application/useMarkers';
-import { useVisits } from '../../application/useVisits';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import { LogOut, Plus, Search, List, Map as MapIcon } from 'lucide-react';
+import { useReviews } from '../../application/useReviews';
 import { useAuth } from '../context/AuthContext';
+import { Review } from '../../domain/types';
+import ReviewCard from '../components/ReviewCard';
+import ReviewDetail from '../components/ReviewDetail';
+import ReviewForm from '../components/ReviewForm';
+import LocationAutocomplete from '../components/LocationAutocomplete';
 import { LocationSuggestion } from '../../application/useGeocoding';
-import { LogOut, MapPin, Search, Users } from 'lucide-react';
+import 'leaflet/dist/leaflet.css';
 
-const Dashboard: React.FC = () => {
-    const { logout, user } = useAuth();
-    const { markers, fetchMyMarkers, fetchUserMarkers, addMarker } = useMarkers();
-    const { visits, fetchVisits } = useVisits();
+// Fix para iconos de Leaflet
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+    iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+    iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
 
-    const [locationName, setLocationName] = useState('');
-    const [file, setFile] = useState<File | null>(null);
-    const [searchEmail, setSearchEmail] = useState('');
-    const [viewingUser, setViewingUser] = useState<string | null>(null);
+/**
+ * Componente para centrar el mapa en una ubicación.
+ */
+const MapController: React.FC<{ center: [number, number] | null }> = ({ center }) => {
+    const map = useMap();
 
     useEffect(() => {
-        fetchMyMarkers();
-        fetchVisits();
-    }, [fetchMyMarkers, fetchVisits]);
-
-    const handleLocationSelect = (suggestion: LocationSuggestion) => {
-        // When user selects from autocomplete, use full display name
-        setLocationName(suggestion.display_name);
-    };
-
-    const handleAddMarker = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!locationName || !file) return;
-        await addMarker(locationName, file);
-        setLocationName('');
-        setFile(null);
-        // Reset input file manually if needed
-    };
-
-    const handleSearch = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (searchEmail) {
-            setViewingUser(searchEmail);
-            fetchUserMarkers(searchEmail);
+        if (center) {
+            map.setView(center, 13);
         }
+    }, [center, map]);
+
+    return null;
+};
+
+/**
+ * Dashboard principal con lista de reseñas, mapa y formulario.
+ * 
+ * @returns Componente JSX del dashboard
+ */
+const Dashboard: React.FC = () => {
+    const { logout, user } = useAuth();
+    const {
+        reviews,
+        loading,
+        fetchAllReviews,
+        createReview,
+        selectedReview,
+        setSelectedReview
+    } = useReviews();
+
+    const [showForm, setShowForm] = useState(false);
+    const [searchAddress, setSearchAddress] = useState('');
+    const [mapCenter, setMapCenter] = useState<[number, number] | null>(null);
+    const [activeTab, setActiveTab] = useState<'list' | 'map'>('list');
+
+    // Cargar reseñas al montar
+    useEffect(() => {
+        fetchAllReviews();
+    }, [fetchAllReviews]);
+
+    /**
+     * Maneja la búsqueda de ubicación.
+     */
+    const handleSearch = (suggestion: LocationSuggestion) => {
+        setSearchAddress(suggestion.display_name);
+        setMapCenter([suggestion.lat, suggestion.lon]);
+        setActiveTab('map');
     };
 
-    const handleBackToMyMap = () => {
-        setViewingUser(null);
-        setSearchEmail('');
-        fetchMyMarkers();
+    /**
+     * Maneja la creación de una nueva reseña.
+     */
+    const handleCreateReview = async (data: {
+        establishment_name: string;
+        address: string;
+        rating: number;
+        images: File[];
+    }) => {
+        await createReview(data);
+        setShowForm(false);
+        fetchAllReviews();
     };
+
+    /**
+     * Muestra el detalle de una reseña.
+     */
+    const handleViewDetails = (review: Review) => {
+        setSelectedReview(review);
+    };
+
+    // Centro por defecto (Madrid, España)
+    const defaultCenter: [number, number] = [40.4168, -3.7038];
 
     return (
         <div className="min-h-screen p-4 md:p-8">
             {/* Header */}
-            <header className="flex justify-between items-center mb-8 bg-white border-2 border-neo-black p-4 shadow-hard">
+            <header className="flex flex-wrap justify-between items-center mb-6 bg-white border-2 border-neo-black p-4 shadow-hard gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold font-mono">MiMapa</h1>
+                    <h1 className="text-2xl font-bold font-mono">ReViews</h1>
                     <p className="text-sm text-gray-600">{user?.email}</p>
                 </div>
-                <button onClick={logout} className="btn-neo bg-neo-pink text-white flex items-center gap-2">
-                    <LogOut size={18} /> Salir
-                </button>
+                <div className="flex gap-2">
+                    <button
+                        onClick={() => setShowForm(!showForm)}
+                        className="btn-neo bg-neo-lime flex items-center gap-2"
+                        aria-expanded={showForm}
+                    >
+                        <Plus size={18} /> Nueva Reseña
+                    </button>
+                    <button
+                        onClick={logout}
+                        className="btn-neo bg-neo-pink flex items-center gap-2"
+                    >
+                        <LogOut size={18} /> Salir
+                    </button>
+                </div>
             </header>
 
-            {/* Main Content */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
-                {/* Left/Top: Map (Takes 2 columns on large) */}
-                <div className="lg:col-span-2">
-                    <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-2xl font-bold border-b-4 border-neo-cyan inline-block">
-                            {viewingUser ? `Mapa de ${viewingUser}` : 'Mi Mundo'}
-                        </h2>
-                        {viewingUser && (
-                            <button onClick={handleBackToMyMap} className="text-sm underline font-bold bg-yellow-200 px-2 border border-black">
-                                Volver a mi mapa
-                            </button>
-                        )}
-                    </div>
-
-                    <Map markers={markers} />
+            {/* Formulario de nueva reseña (toggle) */}
+            {showForm && (
+                <div className="card-neo bg-neo-lime/20 mb-6">
+                    <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                        <Plus size={24} /> Crear Nueva Reseña
+                    </h2>
+                    <ReviewForm onSubmit={handleCreateReview} loading={loading} />
                 </div>
+            )}
 
-                {/* Right: Controls */}
-                <div className="space-y-8">
-
-                    {/* Search User */}
-                    <div className="card-neo bg-neo-cyan/20">
-                        <h3 className="font-bold text-xl mb-4 flex items-center gap-2">
-                            <Search size={24} /> Visitar Usuario
-                        </h3>
-                        <form onSubmit={handleSearch} className="flex flex-col gap-4">
-                            <input
-                                type="email"
-                                placeholder="usuario@ejemplo.com"
-                                className="input-neo"
-                                value={searchEmail}
-                                onChange={(e) => setSearchEmail(e.target.value)}
-                            />
-                            <button type="submit" className="btn-neo bg-white">
-                                Ver Mapa
-                            </button>
-                        </form>
+            {/* Barra de búsqueda */}
+            <div className="card-neo bg-neo-cyan/20 mb-6">
+                <h3 className="font-bold mb-2 flex items-center gap-2">
+                    <Search size={20} /> Buscar ubicación en el mapa
+                </h3>
+                <div className="flex gap-2">
+                    <div className="flex-1">
+                        <LocationAutocomplete
+                            value={searchAddress}
+                            onChange={setSearchAddress}
+                            onSelect={handleSearch}
+                        />
                     </div>
-
-                    {/* Add Marker (Only if not viewing others) */}
-                    {!viewingUser && (
-                        <div className="card-neo bg-neo-lime/20">
-                            <h3 className="font-bold text-xl mb-4 flex items-center gap-2">
-                                <MapPin size={24} /> Añadir destino
-                            </h3>
-                            <form onSubmit={handleAddMarker} className="flex flex-col gap-4">
-                                <LocationAutocomplete
-                                    value={locationName}
-                                    onChange={setLocationName}
-                                    onSelect={handleLocationSelect}
-                                />
-                                <div className="border-2 border-neo-black bg-white p-2 relative">
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        onChange={(e) => setFile(e.target.files ? e.target.files[0] : null)}
-                                        className="w-full"
-                                    />
-                                </div>
-                                <button type="submit" className="btn-neo bg-neo-black text-white hover:bg-gray-800 disabled:opacity-50" disabled={!locationName || !file}>
-                                    Atrincherar Marcador
-                                </button>
-                            </form>
-                        </div>
-                    )}
-
-                    {/* Visits Log */}
-                    {!viewingUser && (
-                        <div className="card-neo bg-neo-pink/20">
-                            <h3 className="font-bold text-xl mb-4 flex items-center gap-2">
-                                <Users size={24} /> Visitas Recientes
-                            </h3>
-                            <div className="max-h-60 overflow-y-auto border-2 border-neo-black bg-white">
-                                {visits.length === 0 ? (
-                                    <p className="p-4 text-center text-gray-500">Nadie te ha visitado aún :(</p>
-                                ) : (
-                                    <table className="w-full text-sm">
-                                        <thead className="bg-neo-black text-white">
-                                            <tr>
-                                                <th className="p-2 text-left">Visitante</th>
-                                                <th className="p-2 text-right">Fecha</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {visits.map((visit, idx) => (
-                                                <tr key={idx} className="border-b border-gray-200 hover:bg-gray-50">
-                                                    <td className="p-2 font-bold truncate max-w-[150px]" title={visit.visitor_email}>
-                                                        {visit.visitor_email}
-                                                        <div className="text-[10px] text-gray-400 font-mono truncate w-20" title={visit.visitor_token}>
-                                                            Token: {visit.visitor_token.substring(0, 10)}...
-                                                        </div>
-                                                    </td>
-                                                    <td className="p-2 text-right">
-                                                        {new Date(visit.timestamp).toLocaleDateString()}
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                )}
-                            </div>
-                        </div>
-                    )}
-
                 </div>
             </div>
+
+            {/* Tabs para móvil */}
+            <div className="flex gap-2 mb-4 md:hidden">
+                <button
+                    onClick={() => setActiveTab('list')}
+                    className={`btn-neo flex-1 flex items-center justify-center gap-2 ${activeTab === 'list' ? 'bg-neo-black text-white' : 'bg-white'}`}
+                >
+                    <List size={18} /> Lista
+                </button>
+                <button
+                    onClick={() => setActiveTab('map')}
+                    className={`btn-neo flex-1 flex items-center justify-center gap-2 ${activeTab === 'map' ? 'bg-neo-black text-white' : 'bg-white'}`}
+                >
+                    <MapIcon size={18} /> Mapa
+                </button>
+            </div>
+
+            {/* Contenido principal */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Lista de reseñas */}
+                <div className={`${activeTab === 'list' ? 'block' : 'hidden'} md:block`}>
+                    <h2 className="text-xl font-bold mb-4 border-b-4 border-neo-lime inline-block">
+                        Reseñas ({reviews.length})
+                    </h2>
+
+                    {loading ? (
+                        <div className="text-center py-8">
+                            <p className="text-gray-500">Cargando reseñas...</p>
+                        </div>
+                    ) : reviews.length === 0 ? (
+                        <div className="card-neo bg-gray-50 text-center py-8">
+                            <p className="text-gray-500 mb-4">No hay reseñas todavía</p>
+                            <button
+                                onClick={() => setShowForm(true)}
+                                className="btn-neo bg-neo-lime"
+                            >
+                                Crear la primera reseña
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[600px] overflow-y-auto pr-2">
+                            {reviews.map((review) => (
+                                <ReviewCard
+                                    key={review._id}
+                                    review={review}
+                                    onViewDetails={handleViewDetails}
+                                />
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                {/* Mapa */}
+                <div className={`${activeTab === 'map' ? 'block' : 'hidden'} md:block`}>
+                    <h2 className="text-xl font-bold mb-4 border-b-4 border-neo-cyan inline-block">
+                        Mapa de Reseñas
+                    </h2>
+                    <div className="border-2 border-neo-black shadow-hard h-[500px]">
+                        <MapContainer
+                            center={mapCenter || defaultCenter}
+                            zoom={5}
+                            style={{ height: '100%', width: '100%' }}
+                        >
+                            <TileLayer
+                                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                            />
+                            <MapController center={mapCenter} />
+
+                            {reviews.map((review) => (
+                                <Marker
+                                    key={review._id}
+                                    position={[review.latitude, review.longitude]}
+                                >
+                                    <Popup>
+                                        <div className="text-center">
+                                            <strong className="block">{review.establishment_name}</strong>
+                                            <span className="text-sm text-gray-600">{review.address}</span>
+                                            <div className="mt-1">
+                                                {'⭐'.repeat(review.rating)}
+                                            </div>
+                                            {review.images && review.images[0] && (
+                                                <img
+                                                    src={review.images[0]}
+                                                    alt={review.establishment_name}
+                                                    className="w-full h-20 object-cover mt-2"
+                                                />
+                                            )}
+                                            <button
+                                                onClick={() => handleViewDetails(review)}
+                                                className="mt-2 text-sm text-blue-600 underline"
+                                            >
+                                                Ver detalles
+                                            </button>
+                                        </div>
+                                    </Popup>
+                                </Marker>
+                            ))}
+                        </MapContainer>
+                    </div>
+                </div>
+            </div>
+
+            {/* Modal de detalle */}
+            {selectedReview && (
+                <ReviewDetail
+                    review={selectedReview}
+                    onClose={() => setSelectedReview(null)}
+                />
+            )}
         </div>
     );
 };

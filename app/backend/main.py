@@ -24,8 +24,8 @@ async def lifespan(app: FastAPI):
     await close_mongo_connection()
 
 app = FastAPI(
-    title="API REST - Parcial 1",
-    description="API REST para gestión de items con MongoDB y FastAPI",
+    title="ReViews API",
+    description="API REST para gestión de reseñas de restaurantes, hoteles y establecimientos. Incluye autenticación OAuth, geocodificación y subida de imágenes.",
     version="1.0.0",
     lifespan=lifespan,
     docs_url="/docs",
@@ -54,7 +54,7 @@ async def root():
         dict: Mensaje de bienvenida y links útiles
     """
     return {
-        "message": "MiMapa API",
+        "message": "ReViews API",
         "version": "1.0.0",
         "docs": "/docs",
         "openapi": "/openapi.json"

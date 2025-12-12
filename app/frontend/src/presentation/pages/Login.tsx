@@ -4,10 +4,21 @@ import api from '../../infrastructure/api/axiosConfig';
 import { useAuth } from '../context/AuthContext';
 import { Navigate, useNavigate } from 'react-router-dom';
 
+/**
+ * Página de inicio de sesión.
+ * Permite autenticarse con Google OAuth.
+ * 
+ * @returns Componente JSX de la página de login
+ */
 const Login: React.FC = () => {
     const { isAuthenticated } = useAuth();
     const navigate = useNavigate();
 
+    /**
+     * Maneja el éxito del login de Google.
+     * 
+     * @param credentialResponse - Respuesta de Google OAuth
+     */
     const handleSuccess = async (credentialResponse: CredentialResponse) => {
         if (credentialResponse.credential) {
             try {
@@ -17,11 +28,11 @@ const Login: React.FC = () => {
                 // Guardar token
                 localStorage.setItem('google_token', credentialResponse.credential);
 
-                // Navigate to home instead of reload
+                // Navegar al dashboard
                 navigate('/');
-                window.location.reload(); // Force reload to update auth context
+                window.location.reload();
             } catch (error) {
-                console.error("Login backend error", error);
+                console.error("Error en login:", error);
             }
         }
     };
@@ -33,14 +44,16 @@ const Login: React.FC = () => {
     return (
         <div className="min-h-screen bg-neo-lime flex items-center justify-center p-4">
             <div className="bg-white border-2 border-neo-black shadow-hard-lg p-10 max-w-md w-full text-center">
-                <h1 className="text-4xl font-bold mb-6 font-mono">MiMapa</h1>
-                <p className="mb-8 text-xl">Tu bitácora de viajes estilo Neo-Brutalist.</p>
+                <h1 className="text-4xl font-bold mb-2 font-mono">ReViews</h1>
+                <p className="mb-8 text-xl text-gray-600">
+                    Tu guía de reseñas de restaurantes, hoteles y más.
+                </p>
 
                 <div className="flex justify-center">
                     <GoogleLogin
                         onSuccess={handleSuccess}
                         onError={() => {
-                            console.log('Login Failed');
+                            console.log('Error en login');
                         }}
                         useOneTap
                         shape="rectangular"
@@ -50,7 +63,7 @@ const Login: React.FC = () => {
                 </div>
 
                 <p className="mt-8 text-sm text-gray-500">
-                    Ingresa con tu cuenta de Google para empezar a añadir marcadores.
+                    Inicia sesión con tu cuenta de Google para crear y ver reseñas.
                 </p>
             </div>
         </div>
@@ -58,3 +71,4 @@ const Login: React.FC = () => {
 };
 
 export default Login;
+
